@@ -13,12 +13,27 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.syz7d.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-client.connect(err => {
-    const collection = client.db("warehouse").collection("inventory");
-    // perform actions on the collection object
-    console.log('Mongo is connected');
-    client.close();
-});
+
+async function run() {
+    try {
+        await client.connect();
+        const inventoryCollection = client.db('warehouse').collection('inventory');
+
+        app.get('/inventory', async (req, res) => {
+            const query = {};
+            const cursor = inventoryCollection.find(query);
+            const inventorys = await cursor.toArray();
+            res.send(inventorys);
+        });
+
+    }
+    finally {
+
+    }
+
+}
+
+run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
