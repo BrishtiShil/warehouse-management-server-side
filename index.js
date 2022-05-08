@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
@@ -19,6 +20,14 @@ async function run() {
         await client.connect();
         const inventoryCollection = client.db('warehouse').collection('inventory');
 
+        // AUTH
+        app.post('/login', async (req, res) => {
+            const inventory = req.body;
+            const accessToken = jwt.sign(inventory, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+            res.send({ accessToken });
+        })
+
+        // GET
         app.get('/inventory', async (req, res) => {
             const query = {};
             const cursor = inventoryCollection.find(query);
@@ -26,10 +35,34 @@ async function run() {
             res.send(inventorys);
         });
 
+        app.get('/inventory/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const inventory = await inventoryCollection.findOne(query);
+            res.send(inventory);
+        })
+
+
         // POST
         app.post('/inventory', async (req, res) => {
             const newInventory = req.body;
             const result = await inventoryCollection.insertOne(newInventory);
+            res.send(result);
+        })
+
+        // update inventory
+        app.put('inventory/:id', async (req, res) => {
+            const id = req.params.id;
+            const addQuantity = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateInventory = {
+
+                $set: {
+                    quantity: newQuantity[0].quantity,
+                }
+            };
+            const result = await inventoryCollection.updateOne(filter, updateInventory, options);
             res.send(result);
         })
 
